@@ -1,0 +1,70 @@
+server:
+  port: 2025
+
+spring:
+  application:
+    name: APIGateway
+
+  cloud:
+    gateway:
+
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: false   # KEEP FALSE because your services use uppercase
+
+      routes:
+
+        # =============================
+        # Order Service Route
+        # =============================
+        - id: order-service
+          uri: lb://OrderService
+          predicates:
+            - Path=/orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: OrderServiceCB
+                fallbackUri: forward:/fallback/order
+
+        # =============================
+        # Product Service Route
+        # =============================
+        - id: product-service
+          uri: lb://ProductService
+          predicates:
+            - Path=/products/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ProductServiceCB
+                fallbackUri: forward:/fallback/product
+
+        # =============================
+        # Customer Service Route
+        # =============================
+
+        - id: customer-service
+          uri: lb://CustomerService
+          predicates:
+            - Path=/customers/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: CustomerServiceCB
+                fallbackUri: forward:/fallback/customer
+
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
